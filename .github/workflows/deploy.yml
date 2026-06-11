@@ -66,6 +66,7 @@ jobs:
           step_time "git sync done"
 
           step_time "docker exec start"
+          docker compose up -d
           docker compose exec -T app sh -c "cd /usr/src/mics-api/app && npm install && pm2 reload mics-api --update-env"
           step_time "docker exec done"
 
