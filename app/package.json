@@ -1,5 +1,5 @@
 {
-  "name": "mics-api",
+  "name": "misc-api",
   "version": "1.0.0",
   "description": "Node.js based REST API service",
   "main": "app.js",

@@ -4,11 +4,9 @@ services:
     restart: unless-stopped
     ports:
       - "3000:3000"
-      - "2223:2222"
     volumes:
-      - ./app:/usr/src/mics-api/app
-      - /usr/src/mics-api/app/node_modules
-      - ./.ssh/authorized_keys:/root/.ssh/authorized_keys:ro
+      - ./app:/usr/src/misc-api/app
+      - /usr/src/misc-api/app/node_modules
     environment:
       - NODE_ENV=production
       - TZ=Asia/Seoul
@@ -20,5 +18,3 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-    command: sh -c "/usr/sbin/sshd && cd /usr/src/mics-api/app && npm install && pm2-runtime start app.js --name mics-api"
-

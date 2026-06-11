@@ -1,4 +1,4 @@
-name: Deploy mics-api
+name: Deploy misc-api
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - main
 
 concurrency:
-  group: mics-api-deploy
+  group: misc-api-deploy
   cancel-in-progress: false
 
 env:
@@ -26,7 +26,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          DI="/tmp/mics-api-deploy-${GITHUB_RUN_ID}.txt"
+          DI="/tmp/misc-api-deploy-${GITHUB_RUN_ID}.txt"
           echo "deploy_info_file=$DI" >> "$GITHUB_OUTPUT"
           echo "head_sha=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
 
@@ -67,7 +67,7 @@ jobs:
 
           step_time "docker exec start"
           docker compose up -d
-          docker compose exec -T app sh -c "cd /usr/src/mics-api/app && npm install && pm2 reload mics-api --update-env"
+          docker compose exec -T app sh -c "cd /usr/src/misc-api/app && npm install && pm2 reload misc-api --update-env"
           step_time "docker exec done"
 
           {
@@ -115,7 +115,7 @@ jobs:
           if len(info) > 3500:
               info = info[:3500] + "\n…(이하 생략)"
           lines = [
-              "✅ 배포 성공 (mics-api)",
+              "✅ 배포 성공 (misc-api)",
               "",
               f"저장소: {os.environ['GH_REPO']}",
               f"브랜치: {os.environ['GH_REF']}",
@@ -166,7 +166,7 @@ jobs:
           if len(info) > 3500:
               info = info[:3500] + "\n…(이하 생략)"
           lines = [
-              "❌ 배포 실패 (mics-api)",
+              "❌ 배포 실패 (misc-api)",
               "",
               f"저장소: {os.environ['GH_REPO']}",
               f"브랜치: {os.environ['GH_REF']}",

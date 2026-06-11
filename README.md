@@ -168,4 +168,4 @@ docker compose up -d
 
 ### 서버 설정
 
-서버의 배포 경로가 `env.DEPLOY_DIR` (`/volume1/Develop/Sites/mics-api`)와 다를 경우 `.github/workflows/deploy.yml`의 `env.DEPLOY_DIR` 값을 수정합니다.
+서버의 배포 경로가 `env.DEPLOY_DIR` (`/volume1/Develop/Sites/misc-api`)와 다를 경우 `.github/workflows/deploy.yml`의 `env.DEPLOY_DIR` 값을 수정합니다.
