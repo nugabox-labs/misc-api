@@ -65,10 +65,10 @@ jobs:
           CUR="$(git rev-parse HEAD)"
           step_time "git sync done"
 
-          step_time "docker exec start"
+          step_time "container restart start"
           docker compose up -d
-          docker compose exec -T app sh -c "cd /usr/src/misc-api/app && npm install && pm2 reload misc-api --update-env"
-          step_time "docker exec done"
+          docker compose restart app
+          step_time "container restart done"
 
           {
             echo ""
