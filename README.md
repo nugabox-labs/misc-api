@@ -12,6 +12,7 @@
 - 카드 사용내역 추가 (자동 금월지출 업데이트)
 - 월별 가계부 페이지 존재 여부 확인
 - 이번 달 가계부 페이지 정보 조회
+- 신앙 기록 추가 (Faith DB)
 
 ## 설정 파일
 
@@ -110,6 +111,12 @@ node app/app.js
 | POST   | `/financial/check-month-page`       | 월별 페이지 존재 여부 확인   | `{ "yearmonth": "YYYY_MM", "format": "json\|plain" }`                                                                                              | JSON/Plain |
 | POST   | `/financial/get-current-month-page` | 이번 달 페이지 정보 조회     | `{ "format": "json\|plain" }`                                                                                                                      | JSON/Plain |
 
+### Faith API
+
+| 메소드 | 엔드포인트              | 설명            | 요청 본문                                                       | 응답 형식  |
+| ------ | ----------------------- | --------------- | --------------------------------------------------------------- | ---------- |
+| POST   | `/faith/add-record`     | 신앙 기록 추가  | `{ "subject": "...", "bible": "...", "date": "YYYY-MM-DD", "format": "json\|plain" }` | JSON/Plain |
+
 ### 응답 형식
 
 1. JSON 형식 (기본값):
@@ -136,136 +143,29 @@ node app/app.js
 
 ## 배포
 
-### SSH 키 설정
-
-1. **로컬에서 SSH 키 생성**:
-
-```bash
-# 프로젝트 루트 디렉토리에서
-mkdir -p .ssh
-cd .ssh
-
-# ED25519 키 생성
-ssh-keygen -t ed25519 -f deploy_key -C "deploy@node-api"
-# 비밀번호는 입력하지 않음 (엔터)
-
-# 권한 설정
-chmod 600 deploy_key       # 비공개 키
-chmod 644 deploy_key.pub   # 공개 키
-
-# authorized_keys 파일 생성
-cp deploy_key.pub authorized_keys
-```
-
-2. **GitHub Secrets 설정**:
-
-- GitHub 저장소의 Settings > Secrets and variables > Actions로 이동
-- 'New repository secret' 클릭
-- Name: `DEPLOY_SSH_KEY`
-- Value: `.ssh/deploy_key` 파일의 내용 전체 복사하여 붙여넣기
-
-3. **SSH 연결 테스트**:
-
-```bash
-# 로컬에서 컨테이너로 SSH 연결 테스트
-ssh -i .ssh/deploy_key -p 2222 root@localhost
-
-# 원격 서버의 컨테이너로 연결 테스트
-ssh -i .ssh/deploy_key -p 2222 root@your-domain.com
-
-# ED25519 키만 사용하도록 강제 (디버깅)
-ssh -v -i .ssh/deploy_key -o IdentitiesOnly=yes -o PreferredAuthentications=publickey -p 2222 root@your-domain.com
-```
-
 ### Docker Compose 실행
 
 ```bash
 # Docker Compose 실행
-docker-compose up -d
+docker compose up -d
 ```
 
-#### docker-compose.yml
+### GitHub Actions 배포 (Self-hosted Runner)
 
-```yaml
-version: "3.8"
-services:
-  node-api:
-    build: .
-    container_name: node-api
-    restart: unless-stopped
-    ports:
-      - "3000:3000"
-      - "2222:2222" # SSH 포트
-    volumes:
-      - ./app:/usr/src/node-api/app
-      - /usr/src/node-api/app/node_modules
-      - ./.ssh/authorized_keys:/root/.ssh/authorized_keys:ro # SSH 키 마운트
-    environment:
-      - NODE_ENV=production
-      - TZ=Asia/Seoul
-    env_file:
-      - app/.env
-    mem_limit: 1g
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-```
-
-#### Dockerfile
-
-```dockerfile
-FROM node:23.6-alpine
-
-# SSH 서버 및 Git 설치
-RUN apk add --no-cache openssh git \
-    && ssh-keygen -A
-
-# SSH 설정
-RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config \
-    && sed -i 's/#Port 22/Port 2222/' /etc/ssh/sshd_config \
-    && sed -i 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/' /etc/ssh/sshd_config \
-    && sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config \
-    && sed -i 's/#StrictModes yes/StrictModes no/' /etc/ssh/sshd_config
-
-WORKDIR /usr/src/node-api
-
-# SSH 디렉토리 생성
-RUN mkdir -p /root/.ssh && \
-    chmod 700 /root/.ssh && \
-    git config --global core.fileMode false
-
-# PM2 전역 설치
-RUN npm install -g pm2
-
-# 프로젝트 파일 복사
-COPY . .
-
-# Git 저장소 초기화
-RUN git init && \
-    git remote add origin https://github.com/nugaBox/node-api.git
-
-WORKDIR /usr/src/node-api/app
-RUN npm install
-
-EXPOSE 2222 3000
-
-CMD chmod 600 /root/.ssh/authorized_keys && /usr/sbin/sshd -D & cd /usr/src/node-api/app && npm install && pm2-runtime start app.js --name node-api
-```
-
-### GitHub Actions 배포
-
-GitHub Actions를 통한 자동 배포가 설정되어 있습니다. `main` 브랜치에 push하면 자동으로 배포가 시작됩니다.
+`main` 브랜치에 push하면 self-hosted 러너(`nugacloud`)가 자동으로 배포를 실행합니다.
 
 배포 프로세스:
 
-1. SSH 키를 사용하여 컨테이너에 접속
-2. Git 저장소에서 최신 코드를 가져옴
-3. 의존성 설치 및 PM2로 앱 재시작
+1. 서버에서 `git fetch` + `git reset --hard origin/main`으로 코드 동기화
+2. `docker compose exec`로 컨테이너 내부에서 `npm install` 및 `pm2 reload` 실행
+3. 성공/실패 결과를 텔레그램으로 알림 전송
 
-주의사항:
+### GitHub Secrets 설정
 
-- SSH 키 파일의 권한 설정이 올바른지 확인 (600)
-- GitHub Secrets에 SSH 키가 올바르게 등록되었는지 확인
-- 컨테이너의 SSH 포트(2222)가 외부에서 접근 가능한지 확인
+| 시크릿 이름 | 설명 |
+| --- | --- |
+| `TELEGRAM_BOT_TOKEN` | 텔레그램 봇 토큰 (배포 알림용) |
+
+### 서버 설정
+
+서버의 배포 경로가 `env.DEPLOY_DIR` (`/volume1/Develop/Sites/mics-api`)와 다를 경우 `.github/workflows/deploy.yml`의 `env.DEPLOY_DIR` 값을 수정합니다.

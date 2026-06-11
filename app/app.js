@@ -8,6 +8,7 @@ const express = require('express');
 const logger = require('./src/logger');
 const { router: notionRouter } = require('./src/notion');
 const { router: financialRouter } = require('./src/financial');
+const { router: faithRouter } = require('./src/faith');
 const { apiLogger } = require('./src/logger');
 
 const app = express();
@@ -95,6 +96,7 @@ const authenticateToken = (req, res, next) => {
 // 모든 API 라우트에 인증 미들웨어 적용
 app.use('/notion', authenticateToken, notionRouter);
 app.use('/financial', authenticateToken, financialRouter);
+app.use('/faith', authenticateToken, faithRouter);
 
 // 기본 에러 핸들러
 app.use((err, req, res, next) => {

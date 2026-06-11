@@ -13,7 +13,7 @@ RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/
     && echo "LogLevel DEBUG3" >> /etc/ssh/sshd_config
 
 # 작업 디렉토리 설정
-WORKDIR /usr/src/node-api
+WORKDIR /usr/src/mics-api
 
 # SSH 디렉토리 생성 및 Git 설정
 RUN mkdir -p /root/.ssh && \
@@ -32,11 +32,11 @@ RUN git init && \
     git remote add origin https://github.com/nugaBox/node-api.git
 
 # 앱 의존성 설치
-WORKDIR /usr/src/node-api/app
+WORKDIR /usr/src/mics-api/app
 RUN npm install
 
 # SSH 및 앱 포트 노출
 EXPOSE 2222 3000
 
 # SSH 서버 시작 후 앱 실행 (PM2 사용)
-CMD chmod 600 /root/.ssh/authorized_keys && /usr/sbin/sshd -D & cd /usr/src/node-api/app && npm install && pm2-runtime start app.js --name node-api 
+CMD chmod 600 /root/.ssh/authorized_keys && /usr/sbin/sshd -D & cd /usr/src/mics-api/app && npm install && pm2-runtime start app.js --name mics-api
